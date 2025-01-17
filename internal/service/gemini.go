@@ -180,7 +180,6 @@ func (g *GeminiService) AnalyzeChanges(
 		genai.Text(userPrompt),
 	)
 	if err != nil {
-		fmt.Println("Error:", err)
 		return "", nil
 	}
 

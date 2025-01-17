@@ -83,6 +83,9 @@ func GeneratorCommite(ctx context.Context, userCommit string) error {
 		})
 
 		genCommit, err := <-genCommitChan, <-errChan
+		if err != nil {
+			return err
+		}
 
 		genCommit = utils.RemoveCotTag(genCommit)
 
