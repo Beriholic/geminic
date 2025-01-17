@@ -1,7 +1,7 @@
 package main
 
-import "fmt"
+import "github.com/beriholic/geminic/cmd"
 
 func main() {
-	fmt.Println("Hello Gemini")
+	cmd.Execute()
 }
