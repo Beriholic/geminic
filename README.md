@@ -11,7 +11,7 @@ go install github.com/beriholic/geminic@latest
 geminic config
 ```
 Interactive configuration
-![](./assets/geminic-config.png)
+![](./assets/config.png)
 
 > recommend to use 'gemini-2.0-flash-exp' model
 
@@ -22,7 +22,7 @@ after git add files, you can use `geminic` to generate commit message
 geminic
 ```
 
-![](./assets/geminic.png)
+![](./assets/root.png)
 
 you can also give gemini commit references with -c
 ```shell
