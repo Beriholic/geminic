@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/AlecAivazis/survey/v2"
+	"github.com/charmbracelet/huh"
 	"github.com/spf13/viper"
 )
 
@@ -16,9 +16,10 @@ type GeminicConfig struct {
 	Key   string
 	Model string
 	Emoji bool
+	Cot   bool
 }
 
-func Vertify() error {
+func Verify() error {
 	cfg := Get()
 	if cfg.Key == "" {
 		return fmt.Errorf("api key must be set, use `geminic config` to set it")
@@ -42,67 +43,62 @@ func Get() *GeminicConfig {
 	return geminicConfig
 }
 
-func Create() {
+func Create() error {
 	expandedPath := os.ExpandEnv(configFilePath)
 
 	configDir := filepath.Dir(expandedPath)
 	if err := os.MkdirAll(configDir, os.ModePerm); err != nil {
-		fmt.Printf("Failed to create config directory: %v\n", err)
-		return
+		return fmt.Errorf("Failed to create config directory: %v\n", err)
 	}
 
 	viper.SetConfigFile(expandedPath)
 	_ = viper.ReadInConfig()
 
-	currentKey := viper.GetString("key")
-	currentEmoji := viper.GetBool("emoji")
-	currentModel := viper.GetString("model")
+	keyState := viper.GetString("key")
+	modelState := viper.GetString("model")
+	emojiState := viper.GetBool("emoji")
+	cotState := viper.GetBool("cot")
 
-	qs := []*survey.Question{
-		{
-			Name: "key",
-			Prompt: &survey.Input{
-				Message: fmt.Sprintf("What is your Gemini API key? (cur: %s)", currentKey),
-				Default: currentKey,
-			},
-		},
-		{
-			Name: "model",
-			Prompt: &survey.Input{
-				Message: fmt.Sprintf("Which model do you want to use? (cur: %s)", currentModel),
-				Default: currentModel,
-			},
-		},
-		{
-			Name: "emoji",
-			Prompt: &survey.Confirm{
-				Message: fmt.Sprintf("Do you want to enable emoji? (cur: %v)", currentEmoji),
-				Default: currentEmoji,
-			},
-		},
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewInput().
+				Title(fmt.Sprintf("What is your Gemini API key?")).
+				Value(&keyState),
+			huh.NewInput().
+				Title(fmt.Sprintf("Which model do you want to use?")).
+				Value(&modelState),
+			huh.NewSelect[bool]().
+				Title(fmt.Sprintf("Do you want to enable emoji?")).
+				Options(
+					huh.NewOption("Yes", true),
+					huh.NewOption("No", false),
+				).
+				Value(&emojiState),
+			huh.NewSelect[bool]().
+				Title(fmt.Sprintf("Do you want to show cot?")).
+				Options(
+					huh.NewOption("Yes", true),
+					huh.NewOption("No", false),
+				).
+				Value(&cotState),
+		).WithTheme(huh.ThemeBase()),
+	)
+
+	if err := form.Run(); err != nil {
+		return fmt.Errorf("Failed to get user input: %v\n", err)
 	}
 
-	answers := GeminicConfig{}
-
-	if err := survey.Ask(qs, &answers); err != nil {
-		fmt.Printf("Failed to get user input: %v\n", err)
-		return
-	}
-
-	if answers.Key != "" {
-		viper.Set("key", answers.Key)
-	}
-	if answers.Model != "" {
-		viper.Set("model", answers.Model)
-	}
-	viper.Set("emoji", answers.Emoji)
+	viper.Set("key", keyState)
+	viper.Set("model", modelState)
+	viper.Set("emoji", emojiState)
+	viper.Set("cot", cotState)
 
 	if err := viper.WriteConfigAs(expandedPath); err != nil {
-		fmt.Printf("Failed to write config file: %v\n", err)
-		return
+		return fmt.Errorf("Failed to write config file: %v\n", err)
 	}
 
 	fmt.Printf("Configuration saved to %s\n", expandedPath)
+	return nil
 }
 
 func load() *GeminicConfig {
@@ -119,5 +115,6 @@ func load() *GeminicConfig {
 		Key:   viper.GetString("key"),
 		Model: viper.GetString("model"),
 		Emoji: viper.GetBool("emoji"),
+		Cot:   viper.GetBool("cot"),
 	}
 }

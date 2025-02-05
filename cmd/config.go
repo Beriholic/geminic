@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/beriholic/geminic/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -10,7 +13,10 @@ var configCmd = &cobra.Command{
 	Short: "Set the config file",
 	Long:  `Set the config file`,
 	Run: func(cmd *cobra.Command, args []string) {
-		config.Create()
+		if err := config.Create(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	},
 }
 
