@@ -11,6 +11,7 @@ go install github.com/beriholic/geminic@latest
 geminic config
 ```
 Interactive configuration
+
 ![](./assets/config.png)
 
 > recommend to use 'gemini-2.0-flash-exp' model
