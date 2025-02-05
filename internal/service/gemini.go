@@ -73,7 +73,7 @@ func (g *GeminiService) BuildCommitInfoPrompt(
 ) *GeminiService {
 	prompt := fmt.Sprintf(`
 <user-commit>
-Reference commit: %s
+%s (write on this basis)
 </user-commit>
 <files>
 %s
@@ -94,11 +94,12 @@ func (g *GeminiService) BuildCot() *GeminiService {
 	prompt := `
 Use the following format to output the chain of thought before each response
 <thinking>
-1. what the code changed
-2. what the purpose of the change was
-3. do you use emoji?
+1. what the code changed?
+2. what the purpose of the change was?
+3. what the type of the change was?
+4. if you could use emoji, what would you use?
 </thinking>
-	`
+`
 	g.Prompts = append(g.Prompts, prompt)
 	return g
 }
@@ -108,10 +109,9 @@ func (g *GeminiService) BuildCorePrompt() *GeminiService {
 	prompt := fmt.Sprintf(`
 Creative Requirements:
 Write a git commit based on the changes made to the user's git repository, strictly following the format below
-
 current emoji usage: %v
 
-Formatting Demonstration:
+Use the following format to output the chain of thought before each response, Only one line of content.
 <content>
 if use emoji:
 <type>: <emoji>(<optional scope>): <commit message>
@@ -180,7 +180,7 @@ func (g *GeminiService) AnalyzeChanges(
 		genai.Text(userPrompt),
 	)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	return fmt.Sprintf("%v", resp.Candidates[0].Content.Parts[0]), nil

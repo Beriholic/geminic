@@ -26,10 +26,9 @@ const (
 	cancel      action = "CANCEL"
 )
 
-func GeneratorCommite(ctx context.Context, userCommit string) error {
-
+func GeneratorCommit(ctx context.Context, userCommit string) error {
 	cfg := config.Get()
-	if err := config.Vertify(); err != nil {
+	if err := config.Verify(); err != nil {
 		return err
 	}
 
@@ -53,6 +52,10 @@ func GeneratorCommite(ctx context.Context, userCommit string) error {
 
 	files, diff, err := gitService.DetectDiffChanges()
 
+	if err != nil {
+		return err
+	}
+
 	if len(files) == 0 {
 		return fmt.Errorf(
 			"no staged changes found. stage your changes manually",
@@ -69,7 +72,7 @@ func GeneratorCommite(ctx context.Context, userCommit string) error {
 		errChan := make(chan error, 1)
 		genCommitChan := make(chan string, 1)
 
-		ui.RenderSpinner("Generating commit message...", func() {
+		err := ui.RenderSpinner("Generating commit message...", func() {
 			genCommit, err := geminiService.AnalyzeChanges(
 				userCommit,
 				client,
@@ -81,15 +84,25 @@ func GeneratorCommite(ctx context.Context, userCommit string) error {
 			errChan <- err
 			genCommitChan <- genCommit
 		})
-
-		genCommit, err := <-genCommitChan, <-errChan
 		if err != nil {
 			return err
 		}
 
-		genCommit = utils.RemoveCotTag(genCommit)
+		rawGenCommit, err := <-genCommitChan, <-errChan
+		if err != nil {
+			return err
+		}
 
-		fmt.Println(genCommit)
+		fmt.Println()
+
+		if cfg.Cot {
+			cotStr := utils.GetCotContext(rawGenCommit)
+			fmt.Println(ui.FormatText("Thinking", cotStr))
+		}
+
+		genCommit := utils.RemoveCotTag(rawGenCommit)
+
+		fmt.Println(ui.FormatText("Generated commit message", genCommit))
 
 		action, err := ui.RenderActionForm()
 		if err != nil {
@@ -103,7 +116,10 @@ func GeneratorCommite(ctx context.Context, userCommit string) error {
 		case ui.REGENERATE:
 			continue
 		case ui.EDIT_COMMIT:
-			ui.RenderEditorForm(genCommit)
+			_, err := ui.RenderEditorForm(genCommit)
+			if err != nil {
+				return err
+			}
 			return nil
 		case ui.CANCEL:
 			fmt.Println("cancelled")

@@ -17,12 +17,12 @@ func init() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "geminicj",
+	Use:   "geminic",
 	Short: "Using Gemini to Write Git Commits ",
 	Long:  `Using Gemini to Write Git Commits `,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		err := internal.GeneratorCommite(ctx, userCommit)
+		err := internal.GeneratorCommit(ctx, userCommit)
 
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)

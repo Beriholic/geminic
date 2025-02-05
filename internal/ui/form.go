@@ -1,6 +1,9 @@
 package ui
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/beriholic/geminic/internal/service"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
@@ -77,4 +80,17 @@ func RenderSpinner(title string, action func()) error {
 		Title(title).
 		Action(action).
 		Run()
+}
+
+func FormatText(title string, context string) string {
+	formattedText := fmt.Sprintf("┃ %s\n", title)
+
+	if context != "" {
+		lines := strings.Split(context, "\n")
+		for _, line := range lines {
+			formattedText += fmt.Sprintf("┃ %s\n", strings.TrimSpace(line))
+		}
+	}
+
+	return formattedText
 }
