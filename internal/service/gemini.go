@@ -99,7 +99,10 @@ func (g *GeminiService) BuildCommitInfoPrompt(
 	return g
 }
 func (g *GeminiService) BuildCot() *GeminiService {
-	prompt := `
+	emoji := config.Get().Emoji
+	prompt := ""
+	if emoji {
+		prompt = `
 Use the following format to output the chain of thought before each response
 <thinking>
 1. what the code changed?
@@ -108,6 +111,16 @@ Use the following format to output the chain of thought before each response
 4. if you could use emoji, what would you use?
 </thinking>
 `
+	} else {
+		prompt = `
+Use the following format to output the chain of thought before each response
+<thinking>
+1. what the code changed?
+2. what the purpose of the change was?
+3. what the type of the change was?
+</thinking>
+`
+	}
 	g.Prompts = append(g.Prompts, prompt)
 	return g
 }
