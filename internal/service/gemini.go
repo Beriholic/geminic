@@ -23,17 +23,28 @@ var (
 func GetGeminiService() *GeminiService {
 	geminiServerOnce.Do(func() {
 		geminiServer = &GeminiService{
-			SystemInstruction: `You now need to help the user generate the message for the git commit please follow the rules 
+			Prompts: make([]string, 0),
+		}
+	})
+	return geminiServer
+}
+
+func (g *GeminiService) BuildGitCommitStle() *GeminiService {
+	emoji := config.Get().Emoji
+	rule := `
+You now need to help the user generate the message for the git commit please follow the rules 
 <rule>
 - Write in first-person singular present tense
 - Be concise and direct
 - Output only the commit message without any explanations
-- Follow the format: <type>(<optional scope>): <commit message>
 - Commit message should starts with lowercase letter.
 - Commit message must be a maximum of 72 characters.
 - Exclude anything unnecessary such as translation. Your entire response will be passed directly into git commit.
 </rule>
-<git-commit-specification>
+`
+
+	gitCommitStyle := `
+<git-commit-style>
 "feat":     "A new feature"
 "fix":      "A bug fix"
 "docs":     "Documentation only changes"
@@ -45,8 +56,10 @@ func GetGeminiService() *GeminiService {
 "ci":       "Changes to our CI configuration files and scripts"
 "chore":    "Other changes that don't modify src or test files"
 "revert":   "Reverts a previous commit"
-</git-commit-specificatio>
-<emoji>
+</git-commit-style>
+`
+	gitCommitEmoji := `
+<git-commit-emoji>
 "feat": ":sparkles:"
 "fix": ":bug:"
 "docs": ":memo:":
@@ -58,12 +71,14 @@ func GetGeminiService() *GeminiService {
 "ci: ":ferris_wheel:":
 "chore: ":hammer:":
 "revert: ":rewind:":
-</emoji>
-`,
-			Prompts: []string{},
-		}
-	})
-	return geminiServer
+</git-commit-emoji>
+`
+	g.Prompts = append(g.Prompts, gitCommitStyle)
+	if emoji {
+		g.Prompts = append(g.Prompts, gitCommitEmoji)
+	}
+	g.Prompts = append(g.Prompts, rule)
+	return g
 }
 
 func (g *GeminiService) BuildCommitInfoPrompt(
@@ -71,23 +86,16 @@ func (g *GeminiService) BuildCommitInfoPrompt(
 	diff string,
 	files []string,
 ) *GeminiService {
-	prompt := fmt.Sprintf(`
-<user-commit>
-%s (write on this basis)
-</user-commit>
-<files>
-%s
-</files>
-<code-diff>
-%s
-<code-diff>
-`,
-		commit,
-		strings.Join(files, ", "),
-		diff,
-	)
+	if commit != "" {
+		const pmt = `<user-commit> %s (write on this basis) </user-commit>`
+		g.Prompts = append(g.Prompts, fmt.Sprintf(pmt, commit))
+	}
 
-	g.Prompts = append(g.Prompts, prompt)
+	fileChanged := fmt.Sprintf(`<files-changed> %s </files-changed>`, strings.Join(files, ", "))
+	codeDiff := fmt.Sprintf(`<code-diff> %s </code-diff>`, diff)
+
+	g.Prompts = append(g.Prompts, fileChanged)
+	g.Prompts = append(g.Prompts, codeDiff)
 	return g
 }
 func (g *GeminiService) BuildCot() *GeminiService {
@@ -104,27 +112,23 @@ Use the following format to output the chain of thought before each response
 	return g
 }
 
-func (g *GeminiService) BuildCorePrompt() *GeminiService {
-	emoji := config.Get().Emoji
-	prompt := fmt.Sprintf(`
-Creative Requirements:
-Write a git commit based on the changes made to the user's git repository, strictly following the format below
-current emoji usage: %v
-
-Use the following format to output the chain of thought before each response, Only one line of content.
-<content>
-if use emoji:
-<type>: <emoji>(<optional scope>): <commit message>
-else:
-<type>(<optional scope>): <commit message>
-</content>
-`, emoji)
+func (g *GeminiService) BuildResponseStructure() *GeminiService {
+	prompt := `return git commit message using this JSON schema:
+	           Return {
+			     "typ": string,
+				 "emoji": string?,
+				 "scope": string?,
+				 "msg":string
+			   }`
 	g.Prompts = append(g.Prompts, prompt)
 	return g
 }
 
 func (g *GeminiService) GetPrompt(commit string, diff string, files []string) string {
-	g.BuildCot().BuildCommitInfoPrompt(commit, diff, files).BuildCorePrompt()
+	g.BuildCot().
+		BuildGitCommitStle().
+		BuildCommitInfoPrompt(commit, diff, files).
+		BuildResponseStructure()
 
 	return strings.Join(g.Prompts, "\n")
 }
@@ -143,7 +147,8 @@ func (g *GeminiService) AnalyzeChanges(
 	}
 
 	model := geminiClient.GenerativeModel(*modelName)
-	safetySettings := []*genai.SafetySetting{
+	model.ResponseMIMEType = "application/json"
+	model.SafetySettings = []*genai.SafetySetting{
 		{
 			Category:  genai.HarmCategoryHarassment,
 			Threshold: genai.HarmBlockNone,
@@ -162,22 +167,15 @@ func (g *GeminiService) AnalyzeChanges(
 		},
 	}
 
-	model.SafetySettings = safetySettings
-
-	model.SystemInstruction = &genai.Content{
-		Parts: []genai.Part{genai.Text(g.SystemInstruction)},
-		Role:  "system",
-	}
-
 	model.SetTemperature(1.02)
-	model.SetTopK(40)
-	model.SetTopP(0.92)
+	// model.SetTopK(40)
+	// model.SetTopP(0.92)
 
-	userPrompt := g.GetPrompt(userCommit, diff, relatedFilesArray)
+	prompt := g.GetPrompt(userCommit, diff, relatedFilesArray)
 
 	resp, err := model.GenerateContent(
 		ctx,
-		genai.Text(userPrompt),
+		genai.Text(prompt),
 	)
 	if err != nil {
 		return "", err

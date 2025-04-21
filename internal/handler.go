@@ -2,28 +2,19 @@ package internal
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/beriholic/geminic/internal/config"
+	"github.com/beriholic/geminic/internal/model"
 	"github.com/beriholic/geminic/internal/service"
 	"github.com/beriholic/geminic/internal/ui"
-	"github.com/beriholic/geminic/internal/utils"
 	"github.com/fatih/color"
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/option"
-)
-
-type action string
-
-const (
-	confirm     action = "CONFIRM"
-	regenerate  action = "REGENERATE"
-	edit        action = "EDIT"
-	editcontext action = "EDIT_CONTEXT"
-	cancel      action = "CANCEL"
 )
 
 func GeneratorCommit(ctx context.Context, userCommit string) error {
@@ -93,14 +84,10 @@ func GeneratorCommit(ctx context.Context, userCommit string) error {
 			return err
 		}
 
-		fmt.Println()
+		var gitCommit model.GitCommit
+		json.Unmarshal([]byte(rawGenCommit), &gitCommit)
 
-		if cfg.Cot {
-			cotStr := utils.GetCotContext(rawGenCommit)
-			fmt.Println(ui.FormatText("Thinking", cotStr))
-		}
-
-		genCommit := utils.RemoveCotTag(rawGenCommit)
+		genCommit := gitCommit.String()
 
 		fmt.Println(ui.FormatText("Generated commit message", genCommit))
 

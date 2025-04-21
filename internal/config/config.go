@@ -16,7 +16,6 @@ type GeminicConfig struct {
 	Key   string
 	Model string
 	Emoji bool
-	Cot   bool
 }
 
 func Verify() error {
@@ -48,7 +47,7 @@ func Create() error {
 
 	configDir := filepath.Dir(expandedPath)
 	if err := os.MkdirAll(configDir, os.ModePerm); err != nil {
-		return fmt.Errorf("Failed to create config directory: %v\n", err)
+		return fmt.Errorf("failed to create config directory: %v", err)
 	}
 
 	viper.SetConfigFile(expandedPath)
@@ -57,44 +56,35 @@ func Create() error {
 	keyState := viper.GetString("key")
 	modelState := viper.GetString("model")
 	emojiState := viper.GetBool("emoji")
-	cotState := viper.GetBool("cot")
 
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
-				Title(fmt.Sprintf("What is your Gemini API key?")).
+				Title("What is your Gemini API key?").
 				Value(&keyState),
 			huh.NewInput().
-				Title(fmt.Sprintf("Which model do you want to use?")).
+				Title("Which model do you want to use?").
 				Value(&modelState),
 			huh.NewSelect[bool]().
-				Title(fmt.Sprintf("Do you want to enable emoji?")).
+				Title("Do you want to enable emoji?").
 				Options(
 					huh.NewOption("Yes", true),
 					huh.NewOption("No", false),
 				).
 				Value(&emojiState),
-			huh.NewSelect[bool]().
-				Title(fmt.Sprintf("Do you want to show cot?")).
-				Options(
-					huh.NewOption("Yes", true),
-					huh.NewOption("No", false),
-				).
-				Value(&cotState),
 		).WithTheme(huh.ThemeBase()),
 	)
 
 	if err := form.Run(); err != nil {
-		return fmt.Errorf("Failed to get user input: %v\n", err)
+		return fmt.Errorf("failed to get user input: %v", err)
 	}
 
 	viper.Set("key", keyState)
 	viper.Set("model", modelState)
 	viper.Set("emoji", emojiState)
-	viper.Set("cot", cotState)
 
 	if err := viper.WriteConfigAs(expandedPath); err != nil {
-		return fmt.Errorf("Failed to write config file: %v\n", err)
+		return fmt.Errorf("failed to write config file: %v", err)
 	}
 
 	fmt.Printf("Configuration saved to %s\n", expandedPath)
@@ -115,6 +105,5 @@ func load() *GeminicConfig {
 		Key:   viper.GetString("key"),
 		Model: viper.GetString("model"),
 		Emoji: viper.GetBool("emoji"),
-		Cot:   viper.GetBool("cot"),
 	}
 }
