@@ -2,35 +2,31 @@ package internal
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/beriholic/geminic/internal/config"
 	"github.com/beriholic/geminic/internal/model"
 	"github.com/beriholic/geminic/internal/service"
 	"github.com/beriholic/geminic/internal/ui"
 	"github.com/fatih/color"
-	"github.com/google/generative-ai-go/genai"
-	"google.golang.org/api/option"
 )
 
 func GeneratorCommit(ctx context.Context, userCommit string) error {
-	cfg := config.Get()
-	if err := config.Verify(); err != nil {
-		return err
-	}
+	// cfg := config.Get()
+	// if err := config.Verify(); err != nil {
+	// 	return err
+	// }
 
-	client, err := genai.NewClient(
-		ctx,
-		option.WithAPIKey(cfg.Key),
-	)
-	if err != nil {
-		return err
-	}
-	defer client.Close()
+	// client, err := genai.NewClient(
+	// 	ctx,
+	// 	option.WithAPIKey(cfg.Key),
+	// )
+	// if err != nil {
+	// 	return err
+	// }
+	// defer client.Close()
 
 	gitService := service.GetGitService()
 
@@ -56,22 +52,23 @@ func GeneratorCommit(ctx context.Context, userCommit string) error {
 	}
 
 	relatedFiles := getRelatedFiles(files)
+	relatedFilesArray := make([]string, 0, len(relatedFiles))
+	for dir, ls := range relatedFiles {
+		relatedFilesArray = append(relatedFilesArray, fmt.Sprintf("%s/%s", dir, ls))
+	}
+
+	geminiService, err := service.NewGeminiServer(ctx, userCommit, diff, relatedFilesArray)
+	defer geminiService.CloseClient()
+	if err != nil {
+		return err
+	}
 
 	for {
-		geminiService := service.GetGeminiService()
-
 		errChan := make(chan error, 1)
-		genCommitChan := make(chan string, 1)
+		genCommitChan := make(chan *model.GitCommit, 1)
 
 		err := ui.RenderSpinner("Generating commit message...", func() {
-			genCommit, err := geminiService.AnalyzeChanges(
-				userCommit,
-				client,
-				ctx,
-				diff,
-				&relatedFiles,
-				&cfg.Model,
-			)
+			genCommit, err := geminiService.Generate(ctx)
 			errChan <- err
 			genCommitChan <- genCommit
 		})
@@ -79,13 +76,10 @@ func GeneratorCommit(ctx context.Context, userCommit string) error {
 			return err
 		}
 
-		rawGenCommit, err := <-genCommitChan, <-errChan
+		gitCommit, err := <-genCommitChan, <-errChan
 		if err != nil {
 			return err
 		}
-
-		var gitCommit model.GitCommit
-		json.Unmarshal([]byte(rawGenCommit), &gitCommit)
 
 		genCommit := gitCommit.String()
 
