@@ -4,7 +4,7 @@ Using Gemini to Write Git Commits
 ## Quick Start
 ### install
 ```shell
-go install github.com/beriholic/geminic@0.3.0
+go install github.com/Beriholic/geminic@latest
 ```
 ### configuration
 ```shell

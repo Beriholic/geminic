@@ -1,4 +1,4 @@
-module github.com/beriholic/geminic
+module github.com/Beriholic/geminic
 
 go 1.23.4
 

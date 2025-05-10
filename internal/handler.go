@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/beriholic/geminic/internal/model"
-	"github.com/beriholic/geminic/internal/service"
-	"github.com/beriholic/geminic/internal/ui"
+	"github.com/Beriholic/geminic/internal/model"
+	"github.com/Beriholic/geminic/internal/service"
+	"github.com/Beriholic/geminic/internal/ui"
 	"github.com/fatih/color"
 )
 

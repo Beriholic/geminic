@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/beriholic/geminic/internal"
+	"github.com/Beriholic/geminic/internal"
 	"github.com/spf13/cobra"
 )
 

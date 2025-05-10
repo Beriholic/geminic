@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/beriholic/geminic/internal/config"
-	md "github.com/beriholic/geminic/internal/model"
+	"github.com/Beriholic/geminic/internal/config"
+	md "github.com/Beriholic/geminic/internal/model"
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/option"
 )
