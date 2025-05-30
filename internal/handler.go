@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Beriholic/geminic/internal/config"
 	"github.com/Beriholic/geminic/internal/model"
 	"github.com/Beriholic/geminic/internal/service"
 	"github.com/Beriholic/geminic/internal/ui"
@@ -14,20 +15,6 @@ import (
 )
 
 func GeneratorCommit(ctx context.Context, userCommit string) error {
-	// cfg := config.Get()
-	// if err := config.Verify(); err != nil {
-	// 	return err
-	// }
-
-	// client, err := genai.NewClient(
-	// 	ctx,
-	// 	option.WithAPIKey(cfg.Key),
-	// )
-	// if err != nil {
-	// 	return err
-	// }
-	// defer client.Close()
-
 	gitService := service.GetGitService()
 
 	if err := gitService.VerifyGitInstallation(); err != nil {
@@ -135,7 +122,20 @@ func getRelatedFiles(files []string) map[string]string {
 	return relatedFiles
 }
 
-func UpdateGeminiModelSelect() error {
+func UpdateGeminiModelSelect(ctx context.Context) error {
+	geminiService, err := service.NewGeminiServerBlank(ctx)
+	if err != nil {
+		return err
+	}
+	models := geminiService.ListModels(ctx)
+	model, err := ui.RenderStringsSelect(models)
+	if err != nil {
+		return err
+	}
+
+	if err = config.SetModel(model); err != nil {
+		return err
+	}
 
 	return nil
 }

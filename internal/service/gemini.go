@@ -36,6 +36,22 @@ func NewGeminiServer(
 	}, nil
 }
 
+func NewGeminiServerBlank(
+	ctx context.Context,
+) (*GeminiService, error) {
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey:  config.Get().Key,
+		Backend: genai.BackendGeminiAPI,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &GeminiService{
+		Prompt: "",
+		client: client,
+	}, nil
+}
+
 func (g *GeminiService) Generate(ctx context.Context) (*md.GitCommit, error) {
 	geminiConfig := &genai.GenerateContentConfig{
 		ResponseMIMEType: "application/json",
@@ -67,4 +83,20 @@ func (g *GeminiService) Generate(ctx context.Context) (*md.GitCommit, error) {
 	}
 
 	return gitCommit, nil
+}
+
+func (g *GeminiService) ListModels(ctx context.Context) []string {
+	iter := g.client.Models.All(ctx)
+
+	models := []string{}
+
+	for model, err := range iter {
+		if err != nil {
+			continue
+		}
+
+		models = append(models, model.Name)
+	}
+
+	return models
 }
