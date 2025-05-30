@@ -14,7 +14,12 @@ Interactive configuration
 
 ![](./assets/config.png)
 
-> recommend to use 'gemini-2.0-flash-exp' model
+
+Switching gemini models
+
+```shell
+geminic models
+```
 
 ### usage
 after git add files, you can use `geminic` to generate commit message
