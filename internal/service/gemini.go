@@ -3,12 +3,10 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/Beriholic/geminic/internal/config"
 	md "github.com/Beriholic/geminic/internal/model"
-	"github.com/google/generative-ai-go/genai"
-	"google.golang.org/api/option"
+	"google.golang.org/genai"
 )
 
 type GeminiService struct {
@@ -24,9 +22,10 @@ func NewGeminiServer(
 ) (*GeminiService, error) {
 	prompt := NewPrompt().Build(commit, diff, files)
 
-	client, err := genai.NewClient(ctx,
-		option.WithAPIKey(config.Get().Key),
-	)
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey:  config.Get().Key,
+		Backend: genai.BackendGeminiAPI,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -38,27 +37,34 @@ func NewGeminiServer(
 }
 
 func (g *GeminiService) Generate(ctx context.Context) (*md.GitCommit, error) {
-	model := g.client.GenerativeModel(config.Get().Model)
+	geminiConfig := &genai.GenerateContentConfig{
+		ResponseMIMEType: "application/json",
+		ResponseSchema: &genai.Schema{
+			Type: genai.TypeObject,
+			Properties: map[string]*genai.Schema{
+				"typ":   {Type: genai.TypeString},
+				"emoji": {Type: genai.TypeString},
+				"scope": {Type: genai.TypeString},
+				"msg":   {Type: genai.TypeString},
+			},
+		},
+	}
 
-	model.SetTemperature(1.02)
-	model.ResponseMIMEType = "application/json"
-
-	resp, err := model.GenerateContent(ctx, genai.Text(g.Prompt))
+	result, err := g.client.Models.GenerateContent(
+		ctx,
+		config.Get().Model,
+		genai.Text(g.Prompt),
+		geminiConfig,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	jsonStr := fmt.Sprintf("%s", resp.Candidates[0].Content.Parts[0])
-
 	var gitCommit *md.GitCommit
 
-	if err := json.Unmarshal([]byte(jsonStr), &gitCommit); err != nil {
+	if err := json.Unmarshal([]byte(result.Text()), &gitCommit); err != nil {
 		return nil, err
 	}
 
 	return gitCommit, nil
-}
-
-func (g *GeminiService) CloseClient() {
-	g.client.Close()
 }

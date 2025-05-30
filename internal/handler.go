@@ -58,7 +58,6 @@ func GeneratorCommit(ctx context.Context, userCommit string) error {
 	}
 
 	geminiService, err := service.NewGeminiServer(ctx, userCommit, diff, relatedFilesArray)
-	defer geminiService.CloseClient()
 	if err != nil {
 		return err
 	}
@@ -134,4 +133,9 @@ func getRelatedFiles(files []string) map[string]string {
 	}
 
 	return relatedFiles
+}
+
+func UpdateGeminiModelSelect() error {
+
+	return nil
 }
