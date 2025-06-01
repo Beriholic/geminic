@@ -55,15 +55,7 @@ func NewGeminiServerBlank(
 func (g *GeminiService) Generate(ctx context.Context) (*md.GitCommit, error) {
 	geminiConfig := &genai.GenerateContentConfig{
 		ResponseMIMEType: "application/json",
-		ResponseSchema: &genai.Schema{
-			Type: genai.TypeObject,
-			Properties: map[string]*genai.Schema{
-				"typ":   {Type: genai.TypeString},
-				"emoji": {Type: genai.TypeString},
-				"scope": {Type: genai.TypeString},
-				"msg":   {Type: genai.TypeString},
-			},
-		},
+		ResponseSchema:   getGenerateStruct(),
 	}
 
 	result, err := g.client.Models.GenerateContent(
@@ -99,4 +91,26 @@ func (g *GeminiService) ListModels(ctx context.Context) []string {
 	}
 
 	return models
+}
+
+func getGenerateStruct() *genai.Schema {
+	if config.Get().Emoji {
+		return &genai.Schema{
+			Type: genai.TypeObject,
+			Properties: map[string]*genai.Schema{
+				"typ":   {Type: genai.TypeString, Description: "type of commit"},
+				"emoji": {Type: genai.TypeString, Description: "emoji of commit"},
+				"scope": {Type: genai.TypeString, Description: "scope of commit"},
+				"msg":   {Type: genai.TypeString, Description: "message of commit"},
+			},
+		}
+	}
+	return &genai.Schema{
+		Type: genai.TypeObject,
+		Properties: map[string]*genai.Schema{
+			"typ":   {Type: genai.TypeString, Description: "type of commit"},
+			"scope": {Type: genai.TypeString, Description: "scope of commit"},
+			"msg":   {Type: genai.TypeString, Description: "message of commit"},
+		},
+	}
 }

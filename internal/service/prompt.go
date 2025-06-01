@@ -39,9 +39,7 @@ func (p *Prompt) Build(
 		AddRule().
 		AddCommitType().
 		AddCommitEmoji().
-		AddCommitInfo(commit, diff, files).
-		AddCot().
-		AddOutputStruct()
+		AddCommitInfo(commit, diff, files)
 	return p.Basic + "\n" + strings.Join(p.Struct, "\n")
 }
 func (p *Prompt) AddStruct(prompt string) *Prompt {
@@ -102,53 +100,6 @@ func (p *Prompt) AddCommitEmoji() *Prompt {
 "revert: ":rewind:":
 </GitCommitEmoji>
 `
-	return p.AddStruct(prompt)
-}
-
-func (p *Prompt) AddOutputStruct() *Prompt {
-	prompt := ""
-	if config.Get().Emoji {
-		prompt = `return git commit message using this JSON schema:
-Return {
-  "typ": string,
-  "emoji": string,
-  "scope": string?,
-  "msg":string
-}`
-	} else {
-		prompt = `return git commit message using this JSON schema:
-Return {
-  "typ": string,
-  "scope": string?,
-  "msg":string
-}`
-	}
-	return p.AddStruct(prompt)
-}
-
-func (p *Prompt) AddCot() *Prompt {
-	prompt := ""
-	if config.Get().Emoji {
-		prompt = `
-Use the following format to output the chain of thought before each response
-<thinking>
-1. what the code changed?
-2. what the purpose of the change was?
-3. what the type of the change was?
-4. if you could use emoji, what would you use?
-</thinking>
-`
-	} else {
-		prompt = `
-Use the following format to output the chain of thought before each response
-<thinking>
-1. what the code changed?
-2. what the purpose of the change was?
-3. what the type of the change was?
-</thinking>
-`
-	}
-
 	return p.AddStruct(prompt)
 }
 
