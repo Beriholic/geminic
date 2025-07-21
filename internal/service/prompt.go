@@ -39,7 +39,8 @@ func (p *Prompt) Build(
 		AddRule().
 		AddCommitType().
 		AddCommitEmoji().
-		AddCommitInfo(commit, diff, files)
+		AddCommitInfo(commit, diff, files).
+		AddI18n()
 	return p.Basic + "\n" + strings.Join(p.Struct, "\n")
 }
 func (p *Prompt) AddStruct(prompt string) *Prompt {
@@ -122,5 +123,14 @@ func (p *Prompt) AddCommitInfo(
 	p.AddStruct(fileChanged)
 	p.AddStruct(codeDiff)
 	p.AddStructEnd("CommitInfo")
+	return p
+}
+
+func (p *Prompt) AddI18n() *Prompt {
+	prompt := fmt.Sprintf("You need to write it in %s language", config.Get().I18n)
+
+	p.AddStructStart("I18n")
+	p.AddStruct(prompt)
+	p.AddStructEnd("I18n")
 	return p
 }

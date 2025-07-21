@@ -9,6 +9,15 @@ import (
 	"google.golang.org/genai"
 )
 
+func init() {
+	if config.Get().CustomUrl != "" {
+		genai.SetDefaultBaseURLs(genai.BaseURLParameters{
+			GeminiURL: config.Get().CustomUrl,
+			VertexURL: config.Get().CustomUrl,
+		})
+	}
+}
+
 type GeminiService struct {
 	Prompt string
 	client *genai.Client

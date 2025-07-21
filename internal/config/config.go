@@ -14,9 +14,11 @@ import (
 const configFilePath = "$HOME/.config/geminic/config.toml"
 
 type GeminicConfig struct {
-	Key   string
-	Model string
-	Emoji bool
+	Key       string
+	Model     string
+	Emoji     bool
+	CustomUrl string
+	I18n      string
 }
 
 func Verify() error {
@@ -59,6 +61,12 @@ func Create() error {
 	keyState := viper.GetString("key")
 	modelState := viper.GetString("model")
 	emojiState := viper.GetBool("emoji")
+	customUrl := viper.GetString("custom_url")
+
+	i18n := viper.GetString("i18n")
+	if i18n == "" {
+		i18n = "en"
+	}
 
 	form := huh.NewForm(
 		huh.NewGroup(
@@ -75,6 +83,12 @@ func Create() error {
 					huh.NewOption("No", false),
 				).
 				Value(&emojiState),
+			huh.NewInput().
+				Title("Custom backend connection (leave blank to disable)").
+				Value(&customUrl),
+			huh.NewInput().
+				Title("i18n").
+				Value(&i18n),
 		).WithTheme(huh.ThemeBase()),
 	)
 
@@ -85,6 +99,8 @@ func Create() error {
 	viper.Set("key", keyState)
 	viper.Set("model", modelState)
 	viper.Set("emoji", emojiState)
+	viper.Set("custom_url", customUrl)
+	viper.Set("i18n", i18n)
 
 	if err := viper.WriteConfigAs(expandedPath); err != nil {
 		return fmt.Errorf("failed to write config file: %v", err)
@@ -105,9 +121,11 @@ func load() *GeminicConfig {
 	}
 
 	return &GeminicConfig{
-		Key:   viper.GetString("key"),
-		Model: viper.GetString("model"),
-		Emoji: viper.GetBool("emoji"),
+		Key:       viper.GetString("key"),
+		Model:     viper.GetString("model"),
+		Emoji:     viper.GetBool("emoji"),
+		CustomUrl: viper.GetString("custom_url"),
+		I18n:      viper.GetString("i18n"),
 	}
 }
 
