@@ -17,11 +17,15 @@ import (
 const configFilePath = "$HOME/.config/geminic/config.toml"
 
 type GeminicConfig struct {
-	Key       string
-	Model     string
-	Emoji     bool
-	CustomUrl string
-	I18n      string
+	Key       string `mapstructure:"key"`
+	Model     string `mapstructure:"model"`
+	Emoji     bool   `mapstructure:"emoji"`
+	CustomUrl string `mapstructure:"custom_url"`
+	I18n      string `mapstructure:"i18n"`
+}
+type GeminiLocalConfig struct {
+	Emoji bool   `mapstructure:"emoji"`
+	I18n  string `mapstructure:"i18n"`
 }
 
 func Verify() error {
@@ -41,10 +45,13 @@ var (
 )
 
 func Get() *GeminicConfig {
+	var err error
 	geminicConfigOnce.Do(func() {
-		geminicConfig = load()
+		geminicConfig, err = load()
 	})
-
+	if err != nil {
+		fmt.Printf("failed to load config: %v", err)
+	}
 	return geminicConfig
 }
 
@@ -113,23 +120,90 @@ func Create() error {
 	return nil
 }
 
-func load() *GeminicConfig {
-	expandedPath := os.ExpandEnv(configFilePath)
+func CreateLocal() error {
+	currentPath, err := os.Getwd()
+	if err != nil {
+		return err
+	}
 
-	viper.SetConfigFile(expandedPath)
+	configPath := filepath.Join(currentPath, "geminic.toml")
 
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		_, err := os.Create(configPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	viper.SetConfigFile(configPath)
 	if err := viper.ReadInConfig(); err != nil {
-		fmt.Printf("Failed to read config file: %v\n", err)
-		return nil
+		return fmt.Errorf("failed to read config file: %v", err)
 	}
 
-	return &GeminicConfig{
-		Key:       viper.GetString("key"),
-		Model:     viper.GetString("model"),
-		Emoji:     viper.GetBool("emoji"),
-		CustomUrl: viper.GetString("custom_url"),
-		I18n:      viper.GetString("i18n"),
+	emojiState := viper.GetBool("emoji")
+	i18n := viper.GetString("i18n")
+	if i18n == "" {
+		i18n = "en"
 	}
+
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[bool]().
+				Title("Do you want to enable emoji?").
+				Options(
+					huh.NewOption("Yes", true),
+					huh.NewOption("No", false),
+				).
+				Value(&emojiState),
+			huh.NewInput().
+				Title("i18n").
+				Value(&i18n),
+		).WithTheme(huh.ThemeBase()),
+	)
+	if err := form.Run(); err != nil {
+		return fmt.Errorf("failed to get user input: %v", err)
+	}
+
+	viper.Set("emoji", emojiState)
+	viper.Set("i18n", i18n)
+
+	if err := viper.WriteConfigAs(configPath); err != nil {
+		return fmt.Errorf("failed to write config file: %v", err)
+	}
+
+	fmt.Printf("Configuration saved to %s\n", configPath)
+	return nil
+}
+
+func load() (*GeminicConfig, error) {
+	v := viper.New()
+
+	expandedPath := os.ExpandEnv(configFilePath)
+	v.SetConfigFile(expandedPath)
+
+	if err := v.ReadInConfig(); err != nil {
+		return nil, fmt.Errorf("failed to read config file: %v", err)
+	}
+
+	currentPath, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current directory: %v", err)
+	}
+	localConfigFile := filepath.Join(currentPath, "geminic.toml")
+
+	if _, err := os.Stat(localConfigFile); err == nil {
+		v.SetConfigFile(localConfigFile)
+
+		if err := v.MergeInConfig(); err != nil {
+			return nil, fmt.Errorf("failed to merge local config file: %v", err)
+		}
+	}
+
+	var cfg GeminicConfig
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config: %v", err)
+	}
+	return &cfg, nil
 }
 
 func SetModel(model string) error {
