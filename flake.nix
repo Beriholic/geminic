@@ -6,26 +6,38 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs { inherit system; };
 
         pname = "geminic";
-        version = "0.3.2";
-      in {
+        version = "0.4.0";
+      in
+      {
         packages = {
           default = pkgs.buildGoModule {
             inherit pname version;
             src = ./.;
-            hash = "sha256-77h2H/mhw9YkAMasVMxoadJbmjmxUPLf/k6tM+cOZcs=";
-            vendorHash = "sha256-77h2H/mhw9YkAMasVMxoadJbmjmxUPLf/k6tM+cOZcs=";
+            hash = "sha256-v2Xcfm582FBiG1ZZCSAF6MilJ0YOTf7ozLv81LO/Xjk=";
+            vendorHash = "sha256-v2Xcfm582FBiG1ZZCSAF6MilJ0YOTf7ozLv81LO/Xjk=";
           };
         };
 
         devShells = {
           default = pkgs.mkShell {
-            buildInputs = [ pkgs.go pkgs.gopls pkgs.delve pkgs.gotools ];
+            buildInputs = [
+              pkgs.go
+              pkgs.gopls
+              pkgs.delve
+              pkgs.gotools
+            ];
           };
         };
 
@@ -35,5 +47,6 @@
             program = "${self.packages.${system}.default}/bin/${pname}";
           };
         };
-      });
+      }
+    );
 }
