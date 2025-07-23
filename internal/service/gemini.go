@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
 
 	"github.com/Beriholic/geminic/internal/config"
 	md "github.com/Beriholic/geminic/internal/model"
@@ -87,18 +89,23 @@ func (g *GeminiService) Generate(ctx context.Context) (*md.GitCommit, error) {
 }
 
 func (g *GeminiService) ListModels(ctx context.Context) []string {
-	iter := g.client.Models.All(ctx)
-
-	models := []string{}
-
-	for model, err := range iter {
+	var models []string
+	if config.Get().CustomUrl != "" {
+		var err error
+		models, err = config.Get().GetCustomModels()
 		if err != nil {
-			continue
+			fmt.Println("error: ", err)
+			os.Exit(1)
 		}
-
-		models = append(models, model.Name)
+	} else {
+		iter := g.client.Models.All(ctx)
+		for model, err := range iter {
+			if err != nil {
+				continue
+			}
+			models = append(models, model.Name)
+		}
 	}
-
 	return models
 }
 

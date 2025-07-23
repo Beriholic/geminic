@@ -1,7 +1,10 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -142,4 +145,44 @@ func SetModel(model string) error {
 	}
 	fmt.Printf("Configuration saved to %s\n", expandedPath)
 	return nil
+}
+
+func (c *GeminicConfig) GetCustomModels() ([]string, error) {
+	type Model struct {
+		Id string `json:"id"`
+	}
+
+	type ResponseData struct {
+		Data []Model `json:"data"`
+	}
+
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/v1/models", c.CustomUrl), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.Key))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var responseData ResponseData
+	if err := json.Unmarshal(body, &responseData); err != nil {
+		return nil, err
+	}
+
+	var ids []string
+	for _, m := range responseData.Data {
+		ids = append(ids, m.Id)
+	}
+
+	return ids, nil
 }
