@@ -35,12 +35,6 @@ you can also give gemini commit references with -c
 geminic -c "fix bug"
 ```
 
-### local configuration
-you can create a `geminic.toml` file in your project root directory to override the
-```shell
-geminic config local
-```
-
 ### help
 
 ```
