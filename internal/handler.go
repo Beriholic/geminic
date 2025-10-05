@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/Beriholic/geminic/internal/config"
-	"github.com/Beriholic/geminic/internal/model"
+	"github.com/Beriholic/geminic/internal/model/dto"
 	"github.com/Beriholic/geminic/internal/service"
 	"github.com/Beriholic/geminic/internal/ui"
 	"github.com/fatih/color"
@@ -25,7 +25,6 @@ func GeneratorCommit(ctx context.Context, userCommit string) error {
 	}
 
 	files, diff, err := gitService.DetectDiffChanges()
-
 	if err != nil {
 		return err
 	}
@@ -44,17 +43,23 @@ func GeneratorCommit(ctx context.Context, userCommit string) error {
 		relatedFilesArray = append(relatedFilesArray, fmt.Sprintf("%s/%s", dir, ls))
 	}
 
-	geminiService, err := service.NewGeminiServer(ctx, userCommit, diff, relatedFilesArray)
+	llmService, err := service.NewLLMServer(ctx)
 	if err != nil {
 		return err
 	}
 
+	commitDTO := &dto.CommitDTO{
+		Commit: userCommit,
+		Diff:   diff,
+		Files:  files,
+	}
+
 	for {
 		errChan := make(chan error, 1)
-		genCommitChan := make(chan *model.GitCommit, 1)
+		genCommitChan := make(chan *dto.GitCommit, 1)
 
 		err := ui.RenderSpinner("Generating commit message...", func() {
-			genCommit, err := geminiService.Generate(ctx)
+			genCommit, err := llmService.Generate(ctx, commitDTO)
 			errChan <- err
 			genCommitChan <- genCommit
 		})
@@ -122,20 +127,21 @@ func getRelatedFiles(files []string) map[string]string {
 	return relatedFiles
 }
 
-func UpdateGeminiModelSelect(ctx context.Context) error {
-	geminiService, err := service.NewGeminiServerBlank(ctx)
+func UpdateModelSelect(ctx context.Context) error {
+	llmService, err := service.NewLLMServer(ctx)
 	if err != nil {
 		return err
 	}
-	models := geminiService.ListModels(ctx)
+
+	models, err := llmService.ModelList(ctx)
+	if err != nil {
+		return err
+	}
+
 	model, err := ui.RenderStringsSelect(models)
 	if err != nil {
 		return err
 	}
 
-	if err = config.SetModel(model); err != nil {
-		return err
-	}
-
-	return nil
+	return config.SetModel(model)
 }

@@ -14,7 +14,7 @@ var modelsCmd = &cobra.Command{
 	Long:  `select Gemini's model`,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		err := internal.UpdateGeminiModelSelect(ctx)
+		err := internal.UpdateModelSelect(ctx)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
