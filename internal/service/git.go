@@ -51,7 +51,6 @@ func (g *GitService) DetectDiffChanges() ([]string, string, error) {
 	}
 
 	diff, err := exec.Command("git", "diff", "--cached", "--diff-algorithm=minimal").Output()
-
 	if err != nil {
 		return nil, "", err
 	}

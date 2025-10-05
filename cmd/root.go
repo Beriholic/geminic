@@ -8,9 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	userCommit string = ""
-)
+var userCommit string = ""
 
 func init() {
 	rootCmd.Flags().StringVarP(&userCommit, "commit", "c", "", "commit message")
@@ -23,7 +21,6 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		err := internal.GeneratorCommit(ctx, userCommit)
-
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)

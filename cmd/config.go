@@ -20,19 +20,6 @@ var configCmd = &cobra.Command{
 	},
 }
 
-var childCmd = &cobra.Command{
-	Use:   "local",
-	Short: "Create local config file",
-	Long:  "Create local config file",
-	Run: func(cmd *cobra.Command, args []string) {
-		if err := config.CreateLocal(); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-	},
-}
-
 func init() {
-	configCmd.AddCommand(childCmd)
 	rootCmd.AddCommand(configCmd)
 }

@@ -1,10 +1,11 @@
-package service
+package prompt
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/Beriholic/geminic/internal/config"
+	"github.com/Beriholic/geminic/internal/model/dto"
 )
 
 type Prompt struct {
@@ -25,24 +26,28 @@ func (p *Prompt) AddStructStart(name string) *Prompt {
 	prompt := fmt.Sprintf("<%s>", name)
 	return p.AddStruct(prompt)
 }
+
 func (p *Prompt) AddStructEnd(name string) *Prompt {
 	prompt := fmt.Sprintf("</%s>", name)
 	return p.AddStruct(prompt)
 }
 
-func (p *Prompt) Build(
-	commit string,
-	diff string,
-	files []string,
-) string {
+func (p *Prompt) Build(commitDTO *dto.CommitDTO) string {
+	if commitDTO == nil {
+		return ""
+	}
+
 	p.
 		AddRule().
 		AddCommitType().
 		AddCommitEmoji().
-		AddCommitInfo(commit, diff, files).
-		AddI18n()
+		AddCommitInfo(commitDTO.Commit, commitDTO.Diff, commitDTO.Files).
+		AddI18n().
+		AddOutputTemplateStruct()
+
 	return p.Basic + "\n" + strings.Join(p.Struct, "\n")
 }
+
 func (p *Prompt) AddStruct(prompt string) *Prompt {
 	p.Struct = append(p.Struct, prompt)
 	return p
@@ -132,5 +137,19 @@ func (p *Prompt) AddI18n() *Prompt {
 	p.AddStructStart("I18n")
 	p.AddStruct(prompt)
 	p.AddStructEnd("I18n")
+	return p
+}
+
+func (p *Prompt) AddOutputTemplateStruct() *Prompt {
+	p.AddStructStart("OutputTempalte")
+	p.AddStruct(`
+		Output only the following JSON structure, without any additional content
+		{
+			"typ": "(required)The type of git commit",
+			"msg": "(required)The subject of git commit"
+			"scope": "(optinal)The scope of git commit",
+			"emoji": "(optinal)The emoji of git commit" 
+		}`)
+	p.AddStructEnd("OutputTempalte")
 	return p
 }
