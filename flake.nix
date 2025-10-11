@@ -25,8 +25,8 @@
           default = pkgs.buildGoModule {
             inherit pname version;
             src = ./.;
-            hash = "sha256-v2Xcfm582FBiG1ZZCSAF6MilJ0YOTf7ozLv81LO/Xjk=";
-            vendorHash = "sha256-v2Xcfm582FBiG1ZZCSAF6MilJ0YOTf7ozLv81LO/Xjk=";
+            hash = "sha256-4mK86IJy/1FsG5ChW1jEdyz/QxSS0U0a+H6Kqd8CjZg=";
+            vendorHash = "sha256-4mK86IJy/1FsG5ChW1jEdyz/QxSS0U0a+H6Kqd8CjZg=";
           };
         };
 
