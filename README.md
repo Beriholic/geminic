@@ -1,3 +1,9 @@
+# ⚠️ Archived
+
+> **Note:** This repository is archived and no longer maintained. Please use Claude Code's commands mode
+> 
+> [~/.claude/commands/git-commit.md](https://gist.github.com/Beriholic/11cd291de35d51ef0a03bfb87dd52cf4)
+
 # Geminic
 Using Gemini to Write Git Commits 
 
@@ -60,3 +66,4 @@ Use "geminic [command] --help" for more information about a command.
 
 ### Credits
   - Thank you Google for such a great [model](https://ai.google/get-started/for-developers)!
+](https://gist.github.com/Beriholic/11cd291de35d51ef0a03bfb87dd52cf4)](https://gist.github.com/Beriholic/11cd291de35d51ef0a03bfb87dd52cf4)
